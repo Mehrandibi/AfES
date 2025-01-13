@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Savings Estimator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #218838;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e9f7ef;
+            border: 1px solid #d4edda;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Energy Savings Estimator</h1>
+        <form id="savingsForm">
+            <div class="form-group">
+                <label for="windowType">Current Window Type</label>
+                <select id="windowType" required>
+                    <option value="">Select...</option>
+                    <option value="single-pane">Single Pane</option>
+                    <option value="double-pane">Double Pane</option>
+                    <option value="energy-efficient">Energy Efficient</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="insulation">Current Insulation Quality</label>
+                <select id="insulation" required>
+                    <option value="">Select...</option>
+                    <option value="poor">Poor</option>
+                    <option value="average">Average</option>
+                    <option value="good">Good</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="homeSize">Home Size (sq ft)</label>
+                <input type="number" id="homeSize" placeholder="Enter home size in square feet" required>
+            </div>
+            <div class="form-group">
+                <label for="numWindows">Number of Windows</label>
+                <input type="number" id="numWindows" placeholder="Enter number of windows" required>
+            </div>
+            <div class="form-group">
+                <label for="location">Location (ZIP Code)</label>
+                <input type="text" id="location" placeholder="Enter ZIP Code" required>
+            </div>
+            <button type="button" class="button" onclick="calculateSavings()">Estimate Savings</button>
+        </form>
+        <div id="results" class="results" style="display:none;"></div>
+    </div>
+
+    <script>
+        async function calculateSavings() {
+            const windowType = document.getElementById('windowType').value;
+            const insulation = document.getElementById('insulation').value;
+            const homeSize = parseFloat(document.getElementById('homeSize').value);
+            const numWindows = parseInt(document.getElementById('numWindows').value);
+            const location = document.getElementById('location').value;
+            
+            if (!windowType || !insulation || isNaN(homeSize) || isNaN(numWindows) || !location) {
+                alert('Please fill out all fields.');
+                return;
+            }
+
+            let savings = (homeSize * 0.5) + (numWindows * 50); // Base savings estimation based on home size and number of windows
+            if (windowType === 'single-pane') savings += 300;
+            if (insulation === 'poor') savings += 200;
+
+            try {
+                // Fetch average energy cost for the ZIP code using U.S. Energy Information Administration API
+                const eiaResponse = await fetch(`https://api.eia.gov/series/?api_key=AkPiSqGv1SStEbAFTs0ReL1yBW8VmYzTAjZOvfbr&series_id=ELEC.PRICE.${location}-RES`);
+                if (eiaResponse.ok) {
+                    const eiaData = await eiaResponse.json();
+                    const energyCost = eiaData.series[0].data[0][1]; // Assuming the latest energy cost is returned
+                    savings += energyCost * 0.1; // Placeholder for energy cost impact
+                } else {
+                    console.warn('Failed to fetch energy cost data, using default value.');
+                    savings += 50; // Default energy cost impact
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                savings += 50; // Default energy cost impact
+            }
+
+            // Actionable suggestions
+            let suggestion = 'Consider upgrading to double-pane or energy-efficient windows during the spring or fall for optimal installation conditions.';
+
+            document.getElementById('results').innerHTML = `
+                <h3>Estimated Annual Savings</h3>
+                <p>You could save approximately <strong>$${savings.toFixed(2)}</strong> per year by upgrading your windows and insulation.</p>
+                <h3>Recommendation</h3>
+                <p>${suggestion}</p>
+            `;
+            document.getElementById('results').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
